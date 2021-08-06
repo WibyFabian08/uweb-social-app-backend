@@ -95,9 +95,11 @@ exports.getUser = async (req, res) => {
       });
     }
 
+    const { password, updatedAt, ...other } = user._doc;
+
     return res.status(200).json({
       status: "ok",
-      user: user,
+      user: other,
     });
   } catch (err) {
     return res.status(500).json({
@@ -172,6 +174,76 @@ exports.deleteUser = async (req, res) => {
     return res.status(500).json({
       status: "error",
       message: "you can only delete your account",
+    });
+  }
+};
+
+exports.follow = async (req, res) => {
+  try {
+    if (req.params.id !== req.body.userId) {
+      const currentUser = await User.findOne({ _id: req.body.userId });
+      const otherUser = await User.findOne({ _id: req.params.id });
+
+      const followCheck = otherUser.followers.includes(currentUser._id);
+
+      if (!followCheck) {
+        await currentUser.updateOne({ $push: { followings: otherUser._id } });
+        await otherUser.updateOne({ $push: { followers: currentUser._id } });
+        return res.status(200).json({
+          status: "ok",
+          message: "follow user success",
+        });
+      } else {
+        return res.status(200).json({
+          status: "error",
+          message: "you already following this account",
+        });
+      }
+    } else {
+      return res.status(500).json({
+        status: "error",
+        message: "you cannot follow yourself",
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({
+      status: "error",
+      message: "can't follow the user",
+    });
+  }
+};
+
+exports.unFollow = async (req, res) => {
+  try {
+    if (req.params.id !== req.body.userId) {
+      const currentUser = await User.findOne({ _id: req.body.userId });
+      const otherUser = await User.findOne({ _id: req.params.id });
+
+      const followCheck = otherUser.followers.includes(currentUser._id);
+
+      if (followCheck) {
+        await currentUser.updateOne({ $pull: { followings: otherUser._id } });
+        await otherUser.updateOne({ $pull: { followers: currentUser._id } });
+        return res.status(200).json({
+          status: "ok",
+          message: "unfollow user success",
+        });
+      } else {
+        return res.status(200).json({
+          status: "error",
+          message: "you don't following this account",
+        });
+      }
+    } else {
+      return res.status(500).json({
+        status: "error",
+        message: "you cannot unfollow yourself",
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({
+      status: "error",
+      message: "can't unfollow the user",
     });
   }
 };
