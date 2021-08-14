@@ -186,15 +186,15 @@ exports.getUserPost = async (req, res) => {
 
 exports.getTimeline = async (req, res) => {
   const currentUser = await User.findOne({ _id: req.params.userId });
-  const myPost = await Post.find({ userId: currentUser.userId });
+  const myPost = await Post.find({ userId: currentUser._id }).sort({createdAt: -1});
   const friendsPost = await Promise.all(
     currentUser.followings.map((friendId) => {
-      return Post.find({ userId: friendId });
+      return Post.find({ userId: friendId }).sort({createdAt: -1});
     })
   );
   return res.status(200).json({
     status: "ok",
     message: "timeline post",
-    timeline: myPost.concat(...friendsPost)
+    timeline: myPost.concat(...friendsPost),
   });
 };

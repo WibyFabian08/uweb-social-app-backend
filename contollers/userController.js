@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
 
 exports.register = async (req, res) => {
   try {
@@ -63,7 +64,10 @@ exports.login = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find(
+      {},
+      { password: 0, createdAt: 0, updatedAt: 0, isAdmin: 0 }
+    );
 
     if (!users) {
       return res.status(404).json({
@@ -110,6 +114,56 @@ exports.getUser = async (req, res) => {
   }
 };
 
+exports.getUserByName = async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+
+    if (!user) {
+      return res.status(404).json({
+        staus: "error",
+        message: "user not found",
+      });
+    }
+
+    const { password, updatedAt, ...other } = user._doc;
+
+    return res.status(200).json({
+      status: "ok",
+      user: other,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: "error",
+      message: "get user failed",
+      err,
+    });
+  }
+};
+
+exports.updateCoverPicture = async (req, res) => {
+  const user = await User.findOne({ _id: req.params.id });
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "user not found",
+    });
+  }
+
+  const path = `public/${user.coverPicture}`;
+  fs.unlink(path, (err) => console.log(err));
+
+  user.coverPicture = `images/${req.file.filename}`;
+
+  await user.save();
+
+  return res.status(200).json({
+    status: "ok",
+    message: "update cover picture success",
+    user,
+  });
+};
+
 exports.updateUser = async (req, res) => {
   if (req.body.userId === req.params.id) {
     try {
@@ -127,11 +181,20 @@ exports.updateUser = async (req, res) => {
         req.body.password = await bcrypt.hash(req.body.password, salt);
       }
 
+      if (req.file) {
+        const path = `public/${user.profilePicture}`;
+        fs.unlink(path, (err) => console.log(err));
+
+        user.profilePicture = `images/${req.file.filename}`;
+        await user.save();
+      }
+
       await User.updateOne({ _id: user._id }, { $set: req.body });
 
       return res.status(200).json({
         status: "ok",
         message: "user updated",
+        user,
       });
     } catch (err) {
       return res.status(500).json({
@@ -158,6 +221,13 @@ exports.deleteUser = async (req, res) => {
           message: "user not found",
         });
       }
+
+      const path = `public/${user.profilePicture}`;
+      fs.unlink(path, (err) => console.log(err));
+
+      const path2 = `public/${user.coverPicture}`;
+      fs.unlink(path2, (err) => console.log(err));
+
       await User.deleteOne({ _id: user._id });
 
       return res.status(200).json({
