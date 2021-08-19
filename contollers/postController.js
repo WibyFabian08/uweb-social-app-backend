@@ -74,12 +74,12 @@ exports.deletePost = async (req, res) => {
       });
     }
 
-    if (req.body.userId !== post.userId) {
-      return res.status(403).json({
-        status: "error",
-        message: "you only can delete your post",
-      });
-    }
+    // if (req.body.userId !== post.userId) {
+    //   return res.status(403).json({
+    //     status: "error",
+    //     message: "you can only delete your post",
+    //   });
+    // }
 
     const path = `public/${post.image}`;
     fs.unlink(path, (err) => console.log(err));
@@ -169,7 +169,7 @@ exports.getUserPost = async (req, res) => {
       });
     }
 
-    const posts = await Post.find({ userId: user._id });
+    const posts = await Post.find({ userId: user._id }).sort({ createdAt: -1 });
 
     return res.status(200).json({
       status: "ok",
@@ -185,16 +185,25 @@ exports.getUserPost = async (req, res) => {
 };
 
 exports.getTimeline = async (req, res) => {
-  const currentUser = await User.findOne({ _id: req.params.userId });
-  const myPost = await Post.find({ userId: currentUser._id }).sort({createdAt: -1});
-  const friendsPost = await Promise.all(
-    currentUser.followings.map((friendId) => {
-      return Post.find({ userId: friendId }).sort({createdAt: -1});
-    })
-  );
-  return res.status(200).json({
-    status: "ok",
-    message: "timeline post",
-    timeline: myPost.concat(...friendsPost),
-  });
+  try {
+    const currentUser = await User.findOne({ _id: req.params.userId });
+    const myPost = await Post.find({ userId: currentUser._id }).sort({
+      createdAt: -1,
+    });
+    const friendsPost = await Promise.all(
+      currentUser.followings.map((friendId) => {
+        return Post.find({ userId: friendId }).sort({ createdAt: -1 });
+      })
+    );
+    return res.status(200).json({
+      status: "ok",
+      message: "timeline post",
+      timeline: myPost.concat(...friendsPost),
+    });
+  } catch(err) {
+    return res.status(500).json({
+      status: "error",
+      message: "get timeline failed",
+    });
+  }
 };

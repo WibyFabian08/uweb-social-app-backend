@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 exports.register = async (req, res) => {
   try {
@@ -90,7 +91,10 @@ exports.getUsers = async (req, res) => {
 
 exports.getUser = async (req, res) => {
   try {
-    const user = await User.findOne({ _id: req.params.id });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return false;
+    const user = await User.findOne({
+      _id: mongoose.Types.ObjectId(req.params.id),
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -141,7 +145,9 @@ exports.getUserByName = async (req, res) => {
 };
 
 exports.updateCoverPicture = async (req, res) => {
-  const user = await User.findOne({ _id: req.params.id });
+  const user = await User.findOne({
+    _id: mongoose.Types.ObjectId(req.params.id),
+  });
 
   if (!user) {
     return res.status(404).json({
@@ -167,7 +173,9 @@ exports.updateCoverPicture = async (req, res) => {
 exports.updateUser = async (req, res) => {
   if (req.body.userId === req.params.id) {
     try {
-      let user = await User.findOne({ _id: req.params.id });
+      let user = await User.findOne({
+        _id: mongoose.Types.ObjectId(req.params.id),
+      });
 
       if (!user) {
         return res.status(404).json({
@@ -214,7 +222,9 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   if (req.body.userId === req.params.id) {
     try {
-      const user = await User.findOne({ _id: req.params.id });
+      const user = await User.findOne({
+        _id: mongoose.Types.ObjectId(req.params.id),
+      });
       if (!user) {
         return res.status(404).json({
           status: "error",
@@ -228,7 +238,7 @@ exports.deleteUser = async (req, res) => {
       const path2 = `public/${user.coverPicture}`;
       fs.unlink(path2, (err) => console.log(err));
 
-      await User.deleteOne({ _id: user._id });
+      await User.deleteOne({ _id: mongoose.Types.ObjectId(user._id) });
 
       return res.status(200).json({
         status: "ok",
@@ -251,8 +261,8 @@ exports.deleteUser = async (req, res) => {
 exports.follow = async (req, res) => {
   try {
     if (req.params.id !== req.body.userId) {
-      const currentUser = await User.findOne({ _id: req.body.userId });
-      const otherUser = await User.findOne({ _id: req.params.id });
+      const currentUser = await User.findById(req.body.userId);
+      const otherUser = await User.findById(req.params.id);
 
       const followCheck = otherUser.followers.includes(currentUser._id);
 
@@ -286,14 +296,22 @@ exports.follow = async (req, res) => {
 exports.unFollow = async (req, res) => {
   try {
     if (req.params.id !== req.body.userId) {
-      const currentUser = await User.findOne({ _id: req.body.userId });
-      const otherUser = await User.findOne({ _id: req.params.id });
+      const currentUser = await User.findOne({
+        _id: mongoose.Types.ObjectId(req.body.userId),
+      });
+      const otherUser = await User.findOne({
+        _id: mongoose.Types.ObjectId(req.params.id),
+      });
 
       const followCheck = otherUser.followers.includes(currentUser._id);
 
       if (followCheck) {
-        await currentUser.updateOne({ $pull: { followings: otherUser._id } });
-        await otherUser.updateOne({ $pull: { followers: currentUser._id } });
+        await currentUser.updateOne({
+          $pull: { followings: mongoose.Types.ObjectId(otherUser._id) },
+        });
+        await otherUser.updateOne({
+          $pull: { followers: mongoose.Types.ObjectId(currentUser._id) },
+        });
         return res.status(200).json({
           status: "ok",
           message: "unfollow user success",
