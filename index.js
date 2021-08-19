@@ -8,6 +8,7 @@ const db = require("./connection");
 const authRouter = require("./routes/auth");
 const userRouter = require("./routes/user");
 const postRouter = require("./routes/post");
+const conversationRouter = require("./routes/conversation");
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -28,6 +29,7 @@ app.use(helmet());
 app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/posts", postRouter);
+app.use("/conversations", conversationRouter);
 
 app.listen(port, () => {
   console.log(`server ruuning at port ${port}`);
