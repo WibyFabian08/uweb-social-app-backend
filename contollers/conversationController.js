@@ -33,7 +33,7 @@ exports.createConversation = async (req, res) => {
 
 exports.getConversationWithOneId = async (req, res) => {
   try {
-    const conversation = await Conversation.findOne({
+    const conversation = await Conversation.find({
       members: { $in: [req.params.userId] },
     });
 
