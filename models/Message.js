@@ -8,7 +8,7 @@ const Message = new Schema(
       type: ObjectId,
       ref: "Conversation",
     },
-    sender: {
+    senderId: {
       type: ObjectId,
       ref: "User",
     },
