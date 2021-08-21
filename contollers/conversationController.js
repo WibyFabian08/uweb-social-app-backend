@@ -6,13 +6,6 @@ exports.createConversation = async (req, res) => {
       members: { $all: [req.body.senderId, req.body.receiverId] },
     });
 
-    if (check) {
-      return res.status(500).json({
-        status: "error",
-        message: "conversation already created",
-      });
-    }
-
     const newConversation = new Conversation({
       members: [req.body.senderId, req.body.receiverId],
     });
@@ -59,7 +52,7 @@ exports.getConversationWithOneId = async (req, res) => {
 
 exports.getConversationWithTwoId = async (req, res) => {
   try {
-    const conversation = await Conversation.find({
+    const conversation = await Conversation.findOne({
       members: { $all: [req.params.senderId, req.params.receiverId] },
     });
 
