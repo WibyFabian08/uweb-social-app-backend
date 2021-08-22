@@ -3,9 +3,6 @@ const Schema = mongoose.Schema;
 
 const User = new Schema(
   {
-    _id: {
-      type: mongoose.ObjectId,
-    },
     username: {
       type: String,
       required: true,
